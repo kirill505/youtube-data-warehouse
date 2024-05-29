@@ -8,6 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 youtube-transcript-api = "^0.6.2"
+connection = "^2021.7.20"
+pandas = "^2.2.2"
+sqlalchemy = "^2.0.30"
+psycopg2 = "^2.9.9"
 
 
 [build-system]

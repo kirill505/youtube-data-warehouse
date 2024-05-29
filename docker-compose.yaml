@@ -16,6 +16,8 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
       TABLE_NAME: ${TABLE_NAME}
       FILE_PATH: ${FILE_PATH}
+      PGADMIN_USER: ${PGADMIN_USER}
+      PGADMIN_PASSWORD: ${PGADMIN_PASSWORD}
 
   warehouse:
     image: postgres:13
@@ -30,6 +32,14 @@ services:
     restart: always
     ports:
       - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_USER}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - "8080:80"
 
   metabase:
     image: metabase/metabase:latest
