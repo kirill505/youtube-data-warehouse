@@ -12,6 +12,10 @@ connection = "^2021.7.20"
 pandas = "^2.2.2"
 sqlalchemy = "^2.0.30"
 psycopg2 = "^2.9.9"
+fastapi = "^0.111.0"
+uvicorn = "^0.30.0"
+streamlit = "^1.35.0"
+requests = "^2.32.3"
 
 
 [build-system]
