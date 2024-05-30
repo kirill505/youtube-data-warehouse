@@ -4,12 +4,14 @@ import streamlit as st
 
 
 # interact with FastAPI endpoint
-backend = "http://fastapi:8000/youtube_link"
+backend = "http://backend:8000/youtube_link/"
 
 
-def process(image):
-
-    return backend
+def process(server_url: str, url: str):
+    r = requests.post(
+        server_url, data={'yt_link': url}, headers={"Content-Type": "application/json"}
+    )
+    return r.text
 
 
 # construct UI layout
@@ -21,9 +23,11 @@ st.write(
     """
 )
 
-title = st.text_input("youtube video link:", "put here")
+yt_link = st.text_input("youtube video link:", "put here")
 
 if st.button("get subtitles"):
 
     col1, col2 = st.columns(2)
-
+    if yt_link:
+        res = process(backend, yt_link)
+        st.subheader(f"Response from API: {res}")
