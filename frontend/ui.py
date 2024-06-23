@@ -11,7 +11,7 @@ def process(server_url: str, url: str):
     r = requests.post(
         server_url, data={'yt_link': url}, headers={"Content-Type": "application/json"}
     )
-    return r.text
+    return r
 
 
 # construct UI layout
@@ -28,6 +28,7 @@ yt_link = st.text_input("youtube video link:", "put here")
 if st.button("get subtitles"):
 
     col1, col2 = st.columns(2)
-    if yt_link:
-        res = process(backend, yt_link)
-        st.subheader(f"Response from API: {res}")
+
+    res = process(backend, yt_link)
+    if yt_link and res.status_code:
+        st.status(f"youtube link has been uploaded")
