@@ -18,6 +18,7 @@ services:
       FILE_PATH: ${FILE_PATH}
       PGADMIN_USER: ${PGADMIN_USER}
       PGADMIN_PASSWORD: ${PGADMIN_PASSWORD}
+      SAVE_PATH: ${SAVE_PATH}
 
   warehouse:
     image: postgres:13
@@ -58,6 +59,11 @@ services:
     networks:
       - linguaspark-net
     container_name: backend
+    volumes:
+      - ./src:/backend/src
+      - ./data:/backend/data
+    environment:
+      SAVE_PATH: ${SAVE_PATH}
 
   streamlit:
     build: frontend/
