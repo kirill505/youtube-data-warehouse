@@ -32,3 +32,4 @@ if st.button("get subtitles"):
     res = process(backend, yt_link)
     if yt_link and res.status_code:
         st.status(f"youtube link has been uploaded")
+
