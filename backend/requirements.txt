@@ -1,4 +1,6 @@
-fastapi == 0.111.0
-uvicorn == 0.30.0
-pandas == 2.2.2
-youtube-transcript-api >= 0.6.2
+fastapi
+uvicorn
+sqlalchemy
+asyncpg
+google-api-python-client
+python-dotenv
