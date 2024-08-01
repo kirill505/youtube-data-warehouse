@@ -15,7 +15,8 @@ def parse_channel_info(data):
         channel_name=snippet["title"],
         description=snippet.get("description", ""),
         # created_at=datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
-        created_at=snippet["publishedAt"]
+        created_at=snippet["publishedAt"],
+        last_updated_at=datetime.utcnow()
     )
 
     stats = ChannelStatsCreate(
@@ -29,14 +30,13 @@ def parse_channel_info(data):
     return channel, stats
 
 
-def parse_video_info(data):
+def parse_video_info(video_data):
     try:
-        video_data = data["items"][0]
+        # video_data = data["items"][0]
         snippet = video_data["snippet"]
         statistics = video_data["statistics"]
 
         published_at = datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
-        print(f'dfsd {published_at}')
         video = VideoCreate(
             video_id=video_data["id"],  # Добавляем video_id
             channel_id=snippet["channelId"],

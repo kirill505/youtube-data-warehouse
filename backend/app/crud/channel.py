@@ -21,7 +21,7 @@ def create_channel(db: Session, channel_id: str):
         raise ValueError("Channel not found")
 
     channel_info, stats = parse_channel_info(data)
-
+    print("3dfsdf", type(channel_info))
     db_channel = Channel(
         channel_id=channel_info.channel_id,
         channel_name=channel_info.channel_name,

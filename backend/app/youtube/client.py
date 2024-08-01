@@ -22,3 +22,12 @@ class YouTubeClient:
         )
         response = request.execute()
         return response
+
+    def get_top_videos(self, limit: int = 50):
+        request = self.client.videos().list(
+            part="snippet,statistics",
+            chart="mostPopular",
+            maxResults=limit,
+            regionCode="AR"  # Change region code as needed
+        )
+        return request.execute()

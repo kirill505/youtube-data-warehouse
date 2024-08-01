@@ -12,6 +12,7 @@ class ChannelCreate(ChannelBase):
 
 class ChannelUpdate(ChannelBase):
     channel_id: str
+    last_updated_at: datetime
 
 
 class ChannelInDBBase(ChannelBase):
