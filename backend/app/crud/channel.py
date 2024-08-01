@@ -2,31 +2,30 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 from app.models.channel import Channel
 from app.schemas.channel import ChannelCreate, ChannelUpdate
-from app.youtube.client import YouTubeClient
-from app.youtube.parser import parse_channel_info
-from app.core.config import settings
+from app.utils.youtube_service import fetch_video_info, fetch_top_videos, fetch_channel_info
 
 
 def get_channel(db: Session, channel_id: str):
     return db.query(Channel).filter(Channel.channel_id == channel_id).first()
 
-def create_channel(db: Session, channel_id: str):
-    db_channel = get_channel(db, channel_id)
+
+def create_new_channel(db: Session, channel_id: str):
+    channel_info, _ = fetch_channel_info(channel_id)
+
+    db_video = create_channel(db, channel_info)
+    return db_video
+
+
+def create_channel(db: Session, channel: ChannelCreate):
+    db_channel = get_channel(db, channel.channel_id)
     if db_channel:
         raise ValueError("Channel already exists")
 
-    youtube_client = YouTubeClient(settings.YOUTUBE_API_KEY)
-    data = youtube_client.get_channel_info(channel_id)
-    if not data["items"]:
-        raise ValueError("Channel not found")
-
-    channel_info, stats = parse_channel_info(data)
-    print("3dfsdf", type(channel_info))
     db_channel = Channel(
-        channel_id=channel_info.channel_id,
-        channel_name=channel_info.channel_name,
-        description=channel_info.description,
-        created_at=channel_info.created_at,
+        channel_id=channel.channel_id,
+        channel_name=channel.channel_name,
+        description=channel.description,
+        created_at=channel.created_at,
         last_updated_at=datetime.utcnow()
     )
 

@@ -21,7 +21,7 @@ def create_video(
     video_id = video_url.split("v=")[-1]
 
     try:
-        video = crud.video.create_video(db=db, video_id=video_id)
+        video = crud.video.create_new_video(db=db, video_id=video_id)
     except ValueError as e:
         print("KeyError:", e)
         raise HTTPException(status_code=404, detail=str(e))
