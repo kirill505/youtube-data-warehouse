@@ -5,8 +5,7 @@ from app.schemas.channel_stats import ChannelStatsCreate
 from app.schemas.video_stats import VideoStatsCreate
 
 
-def parse_channel_info(data):
-    channel_data = data["items"][0]
+def parse_channel_info(channel_data):
     snippet = channel_data["snippet"]
     statistics = channel_data["statistics"]
 
@@ -14,8 +13,8 @@ def parse_channel_info(data):
         channel_id=channel_data["id"],
         channel_name=snippet["title"],
         description=snippet.get("description", ""),
-        # created_at=datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
-        created_at=snippet["publishedAt"]
+        created_at=snippet["publishedAt"],
+        last_updated_at=datetime.utcnow()
     )
 
     stats = ChannelStatsCreate(
@@ -29,21 +28,18 @@ def parse_channel_info(data):
     return channel, stats
 
 
-def parse_video_info(data):
+def parse_video_info(video_data):
     try:
-        video_data = data["items"][0]
         snippet = video_data["snippet"]
         statistics = video_data["statistics"]
 
         published_at = datetime.strptime(snippet["publishedAt"], "%Y-%m-%dT%H:%M:%SZ")
-        print(f'dfsd {published_at}')
         video = VideoCreate(
             video_id=video_data["id"],  # Добавляем video_id
             channel_id=snippet["channelId"],
             title=snippet["title"],
             description=snippet.get("description", ""),
             published_at=published_at
-            # last_updated_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         )
         print("Parsed video data:", video)  # Отладочное сообщение
 
