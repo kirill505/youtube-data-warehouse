@@ -1,11 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.schemas.channel import ChannelCreate, ChannelUpdate
 from app.schemas.video import VideoCreate, VideoUpdate
 from app.schemas.channel_stats import ChannelStatsCreate
 from app.schemas.video_stats import VideoStatsCreate
+from app.utils.datetime_utils import remove_timezone
 
 
-def parse_channel_info(channel_data):
+async def parse_channel_info(channel_data):
     snippet = channel_data["snippet"]
     statistics = channel_data["statistics"]
 
@@ -14,7 +15,7 @@ def parse_channel_info(channel_data):
         channel_name=snippet["title"],
         description=snippet.get("description", ""),
         created_at=snippet["publishedAt"],
-        last_updated_at=datetime.utcnow()
+        last_updated_at=remove_timezone(datetime.now(timezone.utc))
     )
 
     stats = ChannelStatsCreate(
@@ -22,13 +23,13 @@ def parse_channel_info(channel_data):
         subscriber_count=int(statistics["subscriberCount"]),
         video_count=int(statistics["videoCount"]),
         view_count=int(statistics["viewCount"]),
-        last_updated_at=datetime.utcnow()
+        last_updated_at=remove_timezone(datetime.now(timezone.utc))
     )
 
     return channel, stats
 
 
-def parse_video_info(video_data):
+async def parse_video_info(video_data):
     try:
         snippet = video_data["snippet"]
         statistics = video_data["statistics"]
@@ -48,7 +49,7 @@ def parse_video_info(video_data):
             view_count=int(statistics["viewCount"]),
             like_count=int(statistics.get("likeCount", 0)),
             comment_count=int(statistics.get("commentCount", 0)),
-            last_updated_at=datetime.utcnow()
+            last_updated_at=remove_timezone(datetime.now(timezone.utc))
         )
         print("Parsed stats data:", stats)  # Отладочное сообщение
 

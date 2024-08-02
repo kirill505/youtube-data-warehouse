@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.crud import video_stats as crud_video_stats
 from app.schemas import video_stats as schemas_video_stats
-from app.utils.dependencies import get_db
+from app.db.session import get_db
 
 router = APIRouter()
 

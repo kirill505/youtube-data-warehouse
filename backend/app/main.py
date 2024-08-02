@@ -5,7 +5,11 @@ from app.db.base import Base
 
 app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
+
+@app.on_event("startup")
+async def startup_event():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 app.include_router(channels.router, prefix="/api/v1/channels", tags=["channels"])
 app.include_router(videos.router, prefix="/api/v1/videos", tags=["videos"])
