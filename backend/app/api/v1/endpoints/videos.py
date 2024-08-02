@@ -41,10 +41,10 @@ async def update_video(
 
 @router.get("/top50", response_model=List[VideoCreate])
 async def get_top_50_videos(
-        db: Session = Depends(get_db)
+        limit: int
 ) -> Any:
     try:
-        top_videos = await crud.video.get_top_videos(db=db, limit=10)
+        top_videos = await crud.video.get_top_videos(limit=limit)
     except Exception as e:
         print("KeyError:", e)
         raise HTTPException(status_code=500, detail="Ошибка при получении топ-50 видео")
