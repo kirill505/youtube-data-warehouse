@@ -6,7 +6,7 @@ from app.models.video_stats import VideoStats
 from app.schemas.video import VideoCreate, VideoUpdate
 from app.schemas.video_stats import VideoStatsCreate
 from app.crud.channel import get_channel, create_channel, create_new_channel
-from app.utils.youtube_service import fetch_video_info, fetch_top_videos, fetch_channel_info
+from app.utils.youtube_service import fetch_video_info, fetch_top_videos, fetch_channel_info, search_videos
 from typing import List, Awaitable, Dict
 from sqlalchemy.future import select
 from app.utils.datetime_utils import remove_timezone
@@ -156,10 +156,10 @@ async def write_pool_data_to_db_async(top_videos_data: List[VideoCreate]):
     return top_videos
 
 
-async def get_top_videos(limit: int = 50) -> List[VideoCreate]:
+async def get_top_videos(regioncode: str, limit: int = 200) -> List[VideoCreate]:
     start_time = time.perf_counter()
 
-    top_videos_data = await fetch_top_videos(limit=limit)
+    top_videos_data = await fetch_top_videos(regioncode = regioncode, limit=limit)
     top_videos = await write_pool_data_to_db_async(top_videos_data)
 
     end_time = time.perf_counter()
@@ -167,3 +167,8 @@ async def get_top_videos(limit: int = 50) -> List[VideoCreate]:
     print('Finished for: ' + str(total_time) + ' seconds')
 
     return top_videos
+
+
+async def search_and_store_videos(db: AsyncSession, query: str, limit: int = 200) -> List[VideoCreate]:
+    search_results = await search_videos(query, limit)
+    return await write_pool_data_to_db_async(search_results)
