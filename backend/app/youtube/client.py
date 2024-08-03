@@ -29,13 +29,45 @@ class YouTubeClient:
         }
         return await self._get(url, params)
 
-    async def get_top_videos(self, limit: int = 50):
+    async def get_top_videos(self, regioncode: str, limit: int = 200):
         url = f"{self.base_url}/videos"
         params = {
             "part": "snippet,statistics",
             "chart": "mostPopular",
-            "maxResults": limit,
-            "regionCode": "AR",  # Change region code as needed
+            "maxResults": min(limit, 200),
+            "regionCode": regioncode,  # Change region code as needed
             "key": self.api_key
         }
-        return await self._get(url, params)
+
+        top_videos = []
+        while limit > 0:
+            response_data = await self._get(url, params)
+            top_videos.extend(response_data.get('items', []))
+            limit -= len(response_data.get('items', []))
+            if 'nextPageToken' in response_data and limit > 0:
+                params['pageToken'] = response_data['nextPageToken']
+            else:
+                break
+
+        return top_videos
+
+    async def search_videos(self, query: str, limit: int = 200):
+        url = f"{self.base_url}/search"
+        params = {
+            "part": "snippet",
+            "q": query,
+            "type": "video",
+            "maxResults": min(limit, 200),
+            "key": self.api_key
+        }
+
+        search_results = []
+        while limit > 0:
+            response_data = await self._get(url, params)
+            search_results.extend(response_data.get('items', []))
+            limit -= len(response_data.get('items', []))
+            if 'nextPageToken' in response_data and limit > 0:
+                params['pageToken'] = response_data['nextPageToken']
+            else:
+                break
+        return search_results

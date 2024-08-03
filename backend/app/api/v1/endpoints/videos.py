@@ -39,14 +39,36 @@ async def update_video(
     return video
 
 
-@router.get("/top50", response_model=List[VideoCreate])
-async def get_top_50_videos(
-        limit: int
+@router.get("/top_videos", response_model=List[VideoCreate])
+async def get_top_videos(
+        regioncode: str,
+        limit: int = 200
 ) -> Any:
+    if limit <= 0:
+        raise HTTPException(status_code=400, detail="Limit must be greater than 0")
+
     try:
-        top_videos = await crud.video.get_top_videos(limit=limit)
+        top_videos = await crud.video.get_top_videos(regioncode, limit=limit)
     except Exception as e:
         print("KeyError:", e)
-        raise HTTPException(status_code=500, detail="Ошибка при получении топ-50 видео")
+        raise HTTPException(status_code=500, detail="Error fetching top videos")
 
     return top_videos
+
+
+@router.get("/search", response_model=List[VideoCreate])
+async def search_videos(
+        query: str,
+        limit: int = 200,
+        db: AsyncSession = Depends(get_db)
+) -> Any:
+    if limit <= 0:
+        raise HTTPException(status_code=400, detail="Limit must be greater than 0")
+
+    try:
+        found_videos = await crud.video.search_and_store_videos(db, query, limit)
+    except Exception as e:
+        print("Error:", e)
+        raise HTTPException(status_code=500, detail="Error searching videos")
+
+    return found_videos
