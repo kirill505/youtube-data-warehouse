@@ -1,5 +1,4 @@
 import asyncio
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from app.models.video import Video
@@ -8,7 +7,7 @@ from app.schemas.video import VideoCreate, VideoUpdate
 from app.schemas.video_stats import VideoStatsCreate
 from app.crud.channel import get_channel, create_channel, create_new_channel
 from app.utils.youtube_service import fetch_video_info, fetch_top_videos, fetch_channel_info
-from typing import List
+from typing import List, Awaitable, Dict
 from sqlalchemy.future import select
 from app.utils.datetime_utils import remove_timezone
 import time
@@ -39,7 +38,8 @@ async def create_video(db: AsyncSession, video: VideoCreate):
     db_video = Video(
         video_id=video.video_id,
         channel_id=video.channel_id,
-        title=video.description,
+        title=video.title,
+        description=video.description,
         published_at=video.published_at,
         last_updated_at=remove_timezone(datetime.now(timezone.utc))
     )
@@ -93,56 +93,65 @@ async def create_video_stats(db: AsyncSession, video_stats: VideoStatsCreate):
     return db_video_stats
 
 
+async def create_channel_task(channel_info):
+    async with SessionLocal() as db:
+        try:
+            await create_channel(db, channel_info)
+        except Exception as e:
+            await db.rollback()
+            print(f"Error creating channel {channel_info.channel_id}: {e}")
+        else:
+            await db.commit()
+
+
+async def create_video_task(video_info):
+    async with SessionLocal() as db:
+        try:
+            await create_video(db, video_info)
+        except Exception as e:
+            await db.rollback()
+            print(f"Error creating video {video_info.video_id}: {e}")
+        else:
+            await db.commit()
+
+
+async def execute_tasks_in_chunks(tasks: List[Awaitable], chunk_size: int):
+    for i in range(0, len(tasks), chunk_size):
+        chunk = tasks[i:i + chunk_size]
+        print(len(chunk))
+        await asyncio.gather(*chunk)
+
+
+async def process_videos(video_queue: asyncio.Queue):
+    while not video_queue.empty():
+        video_info = await video_queue.get()
+        await create_video_task(video_info)
+        video_queue.task_done()
+
+
 async def write_pool_data_to_db_async(top_videos_data: List[VideoCreate]):
     top_videos = []
-    tasks1, tasks2 = [], []
+    video_queue = asyncio.Queue()
     chunk_size = 200
-
-    async def create_channel_task(channel_info):
-        async with SessionLocal() as db:
-            try:
-                await create_channel(db, channel_info)
-            except Exception as e:
-                await db.rollback()
-                print(f"Error creating channel {channel_info.channel_id}: {e}")
-            else:
-                await db.commit()
-
-    async def create_video_task(video_info):
-        async with SessionLocal() as db:
-            try:
-                await create_video(db, video_info)
-            except Exception as e:
-                await db.rollback()
-                print(f"Error creating video {video_info.video_id}: {e}")
-            else:
-                await db.commit()
 
     for video_info in top_videos_data:
         try:
             async with SessionLocal() as db:
                 if not await get_video(db, video_info.video_id):
                     top_videos.append(video_info)
-
                     db_channel = await get_channel(db, video_info.channel_id)
                     if not db_channel:
                         channel_info, _ = await fetch_channel_info(video_info.channel_id)
-                        # tasks1.append(asyncio.create_task(create_channel_task(channel_info)))
-                        task1 = asyncio.create_task(create_channel_task(channel_info))
-                        tasks1.append(task1)
-                        await task1
-                    tasks2.append(asyncio.create_task(create_video_task(video_info)))
-                    # create_video_stats(db=db, video_stats=stats)
+                        await create_channel_task(channel_info)
+                    await video_queue.put(video_info)
         except ValueError as e:
             print(f"Skipping video {video_info.video_id}: {e}")
 
-    async def execute_tasks_in_chunks(tasks, chunk_size):
-        for i in range(0, len(tasks), chunk_size):
-            chunk = tasks[i:i + chunk_size]
-            await asyncio.gather(*chunk)
-
-    await execute_tasks_in_chunks(tasks1, chunk_size)
-    await execute_tasks_in_chunks(tasks2, chunk_size)
+    # Запуск нескольких воркеров для обработки очереди видео
+    workers = [asyncio.create_task(process_videos(video_queue)) for _ in range(chunk_size)]
+    await video_queue.join()  # Ожидание завершения всех задач
+    for worker in workers:
+        worker.cancel()  # Завершение воркеров
 
     return top_videos
 
