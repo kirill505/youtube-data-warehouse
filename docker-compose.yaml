@@ -44,6 +44,12 @@ x-airflow-common: &airflow-common
       condition: service_healthy
 
 services:
+  kafka_consumer:
+    build: kafka/
+    networks:
+      - confluent
+    restart: always
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     hostname: zookeeper
@@ -69,7 +75,7 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9092:9092"
+      - "29092:9092"
       - "9101:9101"
     environment:
       KAFKA_BROKER_ID: 1
