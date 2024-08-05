@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-asyncpg
-google-api-python-client
-python-dotenv
