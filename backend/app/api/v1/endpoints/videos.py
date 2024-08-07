@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from typing import Any, List
 from app import crud
 from app.schemas.video import Video, VideoCreate, VideoUpdate
