@@ -2,6 +2,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from app.models.video import Video
+from app.models.channel import Channel
 from app.models.video_stats import VideoStats
 from app.schemas.video import VideoCreate, VideoUpdate
 from app.schemas.video_stats import VideoStatsCreate
@@ -18,35 +19,41 @@ async def get_video(db: AsyncSession, video_id: str):
     result = await db.execute(select(Video).filter(Video.video_id == video_id))
     return result.scalars().first()
 
-async def create_new_video(db: AsyncSession, video_id: str):
-    video_info, stats = await fetch_video_info(video_id)
+async def create_new_video_and_channel(db: AsyncSession, video_info: VideoCreate):
+    async with db.begin():  # Использование транзакции
+        # Проверка существования канала
+        db_channel = await get_channel(db, video_info.channel_id)
+        print(f"Channel {video_info.channel_id} found: {db_channel}")
 
-    # Check if the channel exists, if not, create it
-    db_channel = await get_channel(db, video_info.channel_id)
-    if not db_channel:
-        channel_info, _ = await fetch_channel_info(video_info.channel_id)
-        await create_channel(db, channel_info)
+        if not db_channel:
+            channel_info, _ = await fetch_channel_info(video_info.channel_id)
+            print(f"Creating new channel: {channel_info}")
+            db_channel = Channel(
+                channel_id=channel_info.channel_id,
+                channel_name=channel_info.channel_name,
+                description=channel_info.description,
+                created_at=remove_timezone(channel_info.created_at),
+                last_updated_at=remove_timezone(datetime.now(timezone.utc))
+            )
+            db.add(db_channel)
 
-    db_video = await create_video(db, video_info)
-    return db_video
+        # Проверка существования видео
+        db_video = await get_video(db, video_info.video_id)
+        print(f"Video {video_info.video_id} found: {db_video}")
 
+        if not db_video:
+            db_video = Video(
+                video_id=video_info.video_id,
+                channel_id=video_info.channel_id,
+                title=video_info.title,
+                description=video_info.description,
+                published_at=video_info.published_at,
+                last_updated_at=remove_timezone(datetime.now(timezone.utc))
+            )
+            db.add(db_video)
 
-async def create_video(db: AsyncSession, video: VideoCreate):
-    if await get_video(db, video.video_id):
-        raise ValueError("Video already exists")
-
-    db_video = Video(
-        video_id=video.video_id,
-        channel_id=video.channel_id,
-        title=video.title,
-        description=video.description,
-        published_at=video.published_at,
-        last_updated_at=remove_timezone(datetime.now(timezone.utc))
-    )
-    db.add(db_video)
-    await db.commit()
-    await db.refresh(db_video)
-    return db_video
+    await db.commit()  # Коммит транзакции
+    return db_video, db_channel
 
 
 async def update_video(db: AsyncSession, video_id: str):
@@ -93,38 +100,21 @@ async def create_video_stats(db: AsyncSession, video_stats: VideoStatsCreate):
     return db_video_stats
 
 
-async def create_channel_task(channel_info):
-    async with SessionLocal() as db:
-        try:
-            await create_channel(db, channel_info)
-        except Exception as e:
-            await db.rollback()
-            print(f"Error creating channel {channel_info.channel_id}: {e}")
-        else:
-            await db.commit()
-
-
 async def create_video_task(video_info):
     async with SessionLocal() as db:
         try:
-            await create_video(db, video_info)
+            await create_new_video_and_channel(db, video_info)
         except Exception as e:
             await db.rollback()
-            print(f"Error creating video {video_info.video_id}: {e}")
+            print(f"Error creating video {video_info.video_id} or channel {video_info.channel_id}: {e}")
         else:
             await db.commit()
-
-
-async def execute_tasks_in_chunks(tasks: List[Awaitable], chunk_size: int):
-    for i in range(0, len(tasks), chunk_size):
-        chunk = tasks[i:i + chunk_size]
-        print(len(chunk))
-        await asyncio.gather(*chunk)
 
 
 async def process_videos(video_queue: asyncio.Queue):
     while not video_queue.empty():
         video_info = await video_queue.get()
+        print(f"Processing video: {video_info.video_id}")
         await create_video_task(video_info)
         video_queue.task_done()
 
@@ -135,17 +125,8 @@ async def write_pool_data_to_db_async(top_videos_data: List[VideoCreate]):
     chunk_size = 200
 
     for video_info in top_videos_data:
-        try:
-            async with SessionLocal() as db:
-                if not await get_video(db, video_info.video_id):
-                    top_videos.append(video_info)
-                    db_channel = await get_channel(db, video_info.channel_id)
-                    if not db_channel:
-                        channel_info, _ = await fetch_channel_info(video_info.channel_id)
-                        await create_channel_task(channel_info)
-                    await video_queue.put(video_info)
-        except ValueError as e:
-            print(f"Skipping video {video_info.video_id}: {e}")
+        top_videos.append(video_info)
+        await video_queue.put(video_info)
 
     # Запуск нескольких воркеров для обработки очереди видео
     workers = [asyncio.create_task(process_videos(video_queue)) for _ in range(chunk_size)]
