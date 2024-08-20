@@ -8,26 +8,15 @@ This is a data engineering project designed to collect, store, process, and anal
 ## Dataset
 I used Trending YouTube Video Statistics datasets on Kaggle: https://www.kaggle.com/datasets/datasnaek/youtube-new
 
-## Features
+## What I have done:
+- Configured Data Models for OLTP Database (PostgreSQL): Designed and set up relational data models to efficiently handle transactional operations
+- Developed APIs for Parsing YouTube Video and Channel Information: Implemented RESTful APIs to retrieve and process data related to YouTube videos and channels
+- Created a DAG for Downloading Top 200 YouTube Videos
+- Implemented an asynchronous mechanism for recording transactions into the database
+- Configured Kafka: Set up a Kafka producer to regularly trigger the task of parsing the top 200 popular videos and a Kafka consumer to handle the processing of this data
+- Created docker-compose.yaml File for Deployment.
 
-- **Data Collection:** Extract data from the YouTube API and store it in an OLTP database (PostgreSQL).
-- **Data Processing:** Use Apache Spark for efficient ETL (Extract, Transform, Load) operations.
-- **Data Transformation:** Manage data transformations and layers using DBT (Data Build Tool).
-- **Data Warehousing:** Store and query processed data in an OLAP database (ClickHouse).
-- **Pipeline Management:** Automate and schedule ETL pipelines using Apache Airflow.
-- **Data Visualization:** Integrate with Metabase and Apache Superset for insightful data visualization and reporting.
-
-## Technologies Used
-
-- **PostgreSQL:** OLTP database for storing raw data.
-- **ClickHouse:** OLAP database for storing processed data and supporting analytical queries.
-- **DBT:** Tool for data transformation and management of data models.
-- **Apache Spark:** Engine for large-scale data processing and ETL operations.
-- **Apache Airflow:** Platform to programmatically author, schedule, and monitor workflows.
-- **Metabase:** Business intelligence tool for creating dashboards and visualizations.
-- **Apache Superset:** Modern data exploration and visualization platform.
-
-## Project Structure
+## Project plan
 
 1. **Data Collection:**
     - Extract data from YouTube API.
